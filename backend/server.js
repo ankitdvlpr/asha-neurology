@@ -76,12 +76,15 @@ const start = async () => {
     }
   });
 
-  // 3. GET /api/custom/next-available-slots
-  app.get('/api/custom/next-available-slots', async (req, res) => {
+  // 3. GET /api/custom/all-available-slots - Return all future slots
+  app.get('/api/custom/all-available-slots', async (req, res) => {
     const { doctorId } = req.query;
+    if (!doctorId) {
+      return res.status(400).json({ error: 'Missing doctorId' });
+    }
+
     try {
-      // Find the first month/year starting from now that has available slots
-      const nextSlot = await payload.find({
+      const slots = await payload.find({
         collection: 'appointment-slots',
         where: {
           and: [
@@ -91,28 +94,10 @@ const start = async () => {
           ],
         },
         sort: 'date',
-        limit: 1,
+        limit: 500, // Fetch up to 500 future slots
       });
-
-      if (nextSlot.docs.length === 0) {
-        return res.status(404).json({ error: 'No available slots found' });
-      }
-
-      const { month, year } = nextSlot.docs[0];
-      const allInMonth = await payload.find({
-        collection: 'appointment-slots',
-        where: {
-          and: [
-            { doctor: { equals: doctorId } },
-            { month: { equals: month } },
-            { year: { equals: year } },
-            { status: { equals: 'available' } },
-          ],
-        },
-        sort: 'date',
-      });
-
-      res.status(200).json({ month, year, slots: allInMonth.docs });
+      
+      res.status(200).json({ slots: slots.docs });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

@@ -46,7 +46,7 @@ const Appointment = () => {
     if (!selectedDoctor) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/next-available-slots?doctorId=${selectedDoctor}`);
+      const res = await fetch(`${API_BASE}/all-available-slots?doctorId=${selectedDoctor}`);
       
       if (!res.ok) {
         setAvailableSlots([]);
