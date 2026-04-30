@@ -334,9 +334,25 @@ const start = async () => {
     }
   });
 
+  // Keep-alive ping endpoint
+  app.get('/ping', (_, res) => res.json({ status: 'alive', time: new Date().toISOString() }));
+
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+
+    // Self-ping every 4 minutes to prevent Railway cold starts
+    if (process.env.PAYLOAD_PUBLIC_SERVER_URL) {
+      setInterval(async () => {
+        try {
+          const http = require('http');
+          const https = require('https');
+          const url = process.env.PAYLOAD_PUBLIC_SERVER_URL + '/ping';
+          const client = url.startsWith('https') ? https : http;
+          client.get(url, () => {}).on('error', () => {});
+        } catch (_) {}
+      }, 4 * 60 * 1000); // every 4 minutes
+    }
   });
 };
 
