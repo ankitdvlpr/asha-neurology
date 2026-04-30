@@ -46,11 +46,16 @@ const Appointment = () => {
     if (!selectedDoctor) return;
     setLoading(true);
     try {
-      const now = new Date();
-      const res = await fetch(`${API_BASE}/available-slots?doctorId=${selectedDoctor}&month=${now.getMonth() + 1}&year=${now.getFullYear()}`);
+      const res = await fetch(`${API_BASE}/next-available-slots?doctorId=${selectedDoctor}`);
+      
+      if (!res.ok) {
+        setAvailableSlots([]);
+        return;
+      }
+      
       const data = await res.json();
       
-      const uniqueSlots = data.reduce((acc, current) => {
+      const uniqueSlots = data.slots.reduce((acc, current) => {
         const key = `${new Date(current.date).toDateString()}-${current.startTime}`;
         if (!acc.find(item => `${new Date(item.date).toDateString()}-${item.startTime}` === key)) {
           acc.push(current);

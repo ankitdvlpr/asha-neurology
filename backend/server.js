@@ -56,9 +56,6 @@ const start = async () => {
     }
 
     try {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
       const slots = await payload.find({
         collection: 'appointment-slots',
         where: {
@@ -67,7 +64,7 @@ const start = async () => {
             { month: { equals: parseInt(month) } },
             { year: { equals: parseInt(year) } },
             { status: { equals: 'available' } },
-            { date: { greater_than_equal: todayStart.toISOString() } },
+            { date: { greater_than: new Date() } }, // Only future slots
           ],
         },
         sort: 'date',
@@ -83,9 +80,6 @@ const start = async () => {
   app.get('/api/custom/next-available-slots', async (req, res) => {
     const { doctorId } = req.query;
     try {
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-
       // Find the first month/year starting from now that has available slots
       const nextSlot = await payload.find({
         collection: 'appointment-slots',
@@ -93,7 +87,7 @@ const start = async () => {
           and: [
             { doctor: { equals: doctorId } },
             { status: { equals: 'available' } },
-            { date: { greater_than_equal: todayStart.toISOString() } },
+            { date: { greater_than: new Date() } },
           ],
         },
         sort: 'date',
