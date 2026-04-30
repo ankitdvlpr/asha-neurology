@@ -47,33 +47,29 @@ const Appointment = () => {
     setLoading(true);
     try {
       const now = new Date();
-      let allSlots = [];
 
-      // Search current month + next 5 months to find all available slots
-      for (let i = 0; i < 6; i++) {
+      // Build 6 month fetch promises and run ALL at the same time (parallel)
+      const monthFetches = Array.from({ length: 6 }, (_, i) => {
         const searchDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
         const month = searchDate.getMonth() + 1;
         const year = searchDate.getFullYear();
+        return fetch(`${API_BASE}/available-slots?doctorId=${selectedDoctor}&month=${month}&year=${year}`)
+          .then(res => res.ok ? res.json() : [])
+          .then(data => Array.isArray(data) ? data : [])
+          .catch(() => []);
+      });
 
-        const res = await fetch(`${API_BASE}/available-slots?doctorId=${selectedDoctor}&month=${month}&year=${year}`);
-        if (!res.ok) continue;
-        const data = await res.json();
-        // data is an array directly from the old endpoint
-        if (Array.isArray(data)) {
-          allSlots = allSlots.concat(data);
-        }
-      }
+      const results = await Promise.all(monthFetches);
+      const allSlots = results.flat();
 
-      // Deduplicate
-      const uniqueSlots = allSlots.reduce((acc, current) => {
-        const key = `${new Date(current.date).toDateString()}-${current.startTime}`;
-        if (!acc.find(item => `${new Date(item.date).toDateString()}-${item.startTime}` === key)) {
-          acc.push(current);
-        }
-        return acc;
-      }, []);
-
-      // Sort by date
+      // Deduplicate and sort by date
+      const seen = new Set();
+      const uniqueSlots = allSlots.filter(slot => {
+        const key = `${slot.date}-${slot.startTime}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       uniqueSlots.sort((a, b) => new Date(a.date) - new Date(b.date));
 
       setAvailableSlots(uniqueSlots);
