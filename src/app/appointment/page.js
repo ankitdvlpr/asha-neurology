@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, Clock, User, Phone, MessageSquare, CheckCircle, HelpCircle, ChevronDown, ShieldCheck, Heart, UserPlus, AlertCircle } from 'lucide-react';
 
+// Live API configuration for production
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/custom";
 
 const Appointment = () => {
