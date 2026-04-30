@@ -148,39 +148,22 @@ const start = async () => {
         },
       });
 
-      // 4. Send Email Notification
-      if (patientEmail) {
-        try {
-          const doctorObj = typeof slot.doctor === 'object' ? slot.doctor : await payload.findByID({ collection: 'doctors', id: slot.doctor });
-          
-          const text = `Hello ${patientName},\n\nYour appointment has been booked successfully.\n\nBooking Details:\nDoctor: ${doctorObj.name || doctorObj.id}\nDate: ${new Date(slot.date).toLocaleDateString()}\nTime: ${slot.startTime}\nStatus: pending\n\nThank you.`;
-          
-          await sendEmailUtil({
-            to: patientEmail,
-            subject: 'Appointment Booking Confirmation',
-            text
-          });
-
-          return res.status(201).json({
-            success: true,
-            message: 'Appointment booked successfully. Confirmation email sent to patient.',
-            appointment
-          });
-        } catch (emailErr) {
-          payload.logger.error(`Email sending failed: ${emailErr.message}`);
-          return res.status(201).json({
-            success: true,
-            message: 'Appointment booked successfully, but email notification failed.',
-            appointment
-          });
-        }
-      }
-
-      return res.status(201).json({
+      // 4. Respond immediately - don't wait for email
+      res.status(201).json({
         success: true,
-        message: 'Appointment booked successfully.',
+        message: 'Appointment booked successfully. Confirmation email will be sent shortly.',
         appointment
       });
+
+      // 5. Send Email in background (non-blocking)
+      if (patientEmail) {
+        const doctorObj = typeof slot.doctor === 'object' ? slot.doctor : null;
+        const doctorName = doctorObj?.name || 'your doctor';
+        const text = `Hello ${patientName},\n\nYour appointment has been booked successfully.\n\nBooking Details:\nDoctor: ${doctorName}\nDate: ${new Date(slot.date).toLocaleDateString()}\nTime: ${slot.startTime}\nStatus: pending\n\nThank you.\nAsha Neurology Center`;
+
+        sendEmailUtil({ to: patientEmail, subject: 'Appointment Booking Confirmation', text })
+          .catch(err => payload.logger.error(`Background email failed: ${err.message}`));
+      }
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
