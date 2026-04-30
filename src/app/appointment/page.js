@@ -247,7 +247,7 @@ const Appointment = () => {
                             ))}
                           </div>
                         ) : (
-                          <p className="text-red-400 font-bold italic">No slots available for the current month.</p>
+                          <p className="text-red-400 font-bold italic">No slots available for this doctor.</p>
                         )}
                       </div>
                     )}
