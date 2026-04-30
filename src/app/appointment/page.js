@@ -46,22 +46,35 @@ const Appointment = () => {
     if (!selectedDoctor) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/all-available-slots?doctorId=${selectedDoctor}`);
-      
-      if (!res.ok) {
-        setAvailableSlots([]);
-        return;
+      const now = new Date();
+      let allSlots = [];
+
+      // Search current month + next 5 months to find all available slots
+      for (let i = 0; i < 6; i++) {
+        const searchDate = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const month = searchDate.getMonth() + 1;
+        const year = searchDate.getFullYear();
+
+        const res = await fetch(`${API_BASE}/available-slots?doctorId=${selectedDoctor}&month=${month}&year=${year}`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        // data is an array directly from the old endpoint
+        if (Array.isArray(data)) {
+          allSlots = allSlots.concat(data);
+        }
       }
-      
-      const data = await res.json();
-      
-      const uniqueSlots = data.slots.reduce((acc, current) => {
+
+      // Deduplicate
+      const uniqueSlots = allSlots.reduce((acc, current) => {
         const key = `${new Date(current.date).toDateString()}-${current.startTime}`;
         if (!acc.find(item => `${new Date(item.date).toDateString()}-${item.startTime}` === key)) {
           acc.push(current);
         }
         return acc;
       }, []);
+
+      // Sort by date
+      uniqueSlots.sort((a, b) => new Date(a.date) - new Date(b.date));
 
       setAvailableSlots(uniqueSlots);
     } catch (err) {
